@@ -17,7 +17,6 @@ logger = logging.getLogger(__name__)
 
 @api_view(['POST'])
 def start_assessment(request):
-    import pdb; pdb.set_trace()
     """Start a new health assessment"""
     serializer = StartAssessmentSerializer(data=request.data)
     if not serializer.is_valid():
@@ -29,7 +28,6 @@ def start_assessment(request):
     try:
         with transaction.atomic():
             # Create assessment
-            import pdb; pdb.set_trace()
             assessment = HealthAssessment.objects.create(
                 session_id=session_id,
                 initial_concern=data['initial_concern'],
@@ -43,12 +41,19 @@ def start_assessment(request):
             questions = gemeni_service.generate_initial_questions(data['initial_concern'])
             
             # Create question objects
+            question_objs = []
             for i, question_text in enumerate(questions, 1):
-                Question.objects.create(
+                q = Question.objects.create(
                     assessment=assessment,
                     question_text=question_text,
                     question_order=i
                 )
+                question_objs.append({
+                    'id': q.id,
+                    'question_text': q.question_text,
+                    'question_order': q.question_order,
+                    'is_answered': q.is_answered
+                })
             
             assessment.status = 'in_progress'
             assessment.save()
@@ -56,7 +61,7 @@ def start_assessment(request):
             return Response({
                 'assessment_id': assessment.id,
                 'session_id': assessment.session_id,
-                'questions': questions,
+                'questions': question_objs,
                 'status': 'success'
             })
             
@@ -70,7 +75,6 @@ def start_assessment(request):
 @api_view(['POST'])
 def submit_answer(request):
     """Submit an answer to a question"""
-    import pdb; pdb.set_trace()
     serializer = SubmitAnswerSerializer(data=request.data)
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -132,7 +136,6 @@ def submit_answer(request):
 @api_view(['GET'])
 def get_assessment(request, assessment_id):
     """Get assessment details"""
-    import pdb; pdb.set_trace()
     try:
         assessment = get_object_or_404(HealthAssessment, id=assessment_id)
         serializer = HealthAssessmentSerializer(assessment)
@@ -147,7 +150,6 @@ def get_assessment(request, assessment_id):
 @api_view(['POST'])
 def generate_treatment_plan(request, assessment_id):
     """Generate treatment plan for completed assessment"""
-    import pdb; pdb.set_trace()
     try:
         assessment = get_object_or_404(HealthAssessment, id=assessment_id)
         
@@ -202,9 +204,7 @@ def generate_treatment_plan(request, assessment_id):
 @api_view(['GET'])
 def get_next_question(request, assessment_id):
     """Get the next unanswered question"""
-    import pdb; pdb.set_trace()
     try:
-        import pdb; pdb.set_trace()
         assessment = get_object_or_404(HealthAssessment, id=assessment_id)
         next_question = assessment.questions.filter(is_answered=False).first()
         

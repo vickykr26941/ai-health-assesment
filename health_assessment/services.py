@@ -28,7 +28,6 @@ class ClaudeService:
         
         Return only the questions, one per line, without numbering.
         """
-        import pdb; pdb.set_trace()
         try:
             response = self.client.messages.create(
                 model="claude-3-sonnet-20240229",
@@ -101,7 +100,6 @@ class EKAMCPService:
     
     def generate_treatment_plan(self, assessment: HealthAssessment) -> Dict[str, Any]:
         """Generate treatment plan using EKA MCP server"""
-        import pdb; pdb.set_trace()
         # Prepare assessment data for EKA MCP
         assessment_data = {
             "initial_concern": assessment.initial_concern,
@@ -169,16 +167,19 @@ class EKAMCPService:
             "followup_instructions": "Schedule a follow-up appointment in 1-2 weeks if symptoms persist or worsen. Seek immediate medical attention if you experience severe symptoms or if your condition deteriorates."
              }
             """
-
-            import pdb; pdb.set_trace()
             response = gemeni_service.model.generate_content(prompt)
-            if not response or not response.content:
+            if not response or not response.text:
                 logger.error("EKA MCP returned empty response")
                 return self._fallback_treatment_plan()
-            response_content = response.content[0].text.strip()
-            
-            if response.status_code == 200:
-                return response.json()
+            response_content = response.text
+
+            if response_content:
+                raw_json = response_content.strip('` \n')
+                if raw_json.startswith('json'):
+                    raw_json = raw_json[4:].strip()
+                data = json.loads(raw_json)
+                if data:
+                    return data
             else:
                 logger.error(f"EKA MCP returned status {response.status_code}: {response.text}")
                 return self._fallback_treatment_plan()

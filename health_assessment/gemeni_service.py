@@ -10,11 +10,10 @@ logger = logging.getLogger(__name__)
 
 class GeminiService:
     def __init__(self):
-        genai.configure(api_key="<add_your_api_key_here>")
-        self.model = genai.GenerativeModel('gemini-2.5-flash')
+        genai.configure(api_key="AIzaSyAo_PhwPEmumRAeKwodOwnLYU7sL8hCA_Q")
+        self.model = genai.GenerativeModel('gemini-2.0-flash')
     
     def generate_initial_questions(self, concern: str) -> List[str]:
-        import pdb; pdb.set_trace()
         """Generate initial questions based on the patient's concern"""
         prompt = f"""
         You are a medical AI assistant helping to conduct a health assessment. 

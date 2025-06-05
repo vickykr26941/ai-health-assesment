@@ -98,15 +98,8 @@ const HealthAssessmentApp = () => {
                 initialConcern: initialConcern
             });
 
-            const questionObjects = response.questions.map((text, index) => ({
-                id: index + 1,
-                question_text: text,
-                question_order: index + 1,
-                is_answered: false
-            }));
-
-            setQuestions(questionObjects);
-            setCurrentQuestion(questionObjects[0]);
+            setQuestions(response.questions);
+            setCurrentQuestion(response.questions[0]);
             setCurrentStep('assessment');
         } catch (error) {
             setError(`Failed to start assessment: ${error.message}`);
