@@ -21,6 +21,13 @@ const HealthAssessmentApp = () => {
     const [voiceFeedback, setVoiceFeedback] = useState('');
 
     const speechRecognition = useRef(null);
+    const [concern, setConcern] = useState('');
+
+
+    // text-to-speech setups
+    const speechSynthesis = useRef(null);
+    const [isSpeaking, setIsSpeaking] = useState(false);
+    const currentInputSetterRef = useRef(() => {});
 
     // Initialize speech recognition
     useEffect(() => {
@@ -39,7 +46,8 @@ const HealthAssessmentApp = () => {
             
             recognition.onresult = (event) => {
                 const transcript = event.results[0][0].transcript;
-                setCurrentAnswer(transcript);
+                // setCurrentAnswer(transcript);
+                currentInputSetterRef.current(transcript);
                 setVoiceFeedback(`✓ Heard: "${transcript}"`);
             };
             
@@ -54,7 +62,35 @@ const HealthAssessmentApp = () => {
             
             speechRecognition.current = recognition;
         }
+
+        if ('speechSynthesis' in window) {
+            speechSynthesis.current = window.speechSynthesis;
+        }
     }, []);
+
+    // Speec to text function
+    const speak = (text, callback = null) => {
+        if (!speechSynthesis.current) {
+            console.warn('Speech synthesis not supported');
+            return;
+        }
+        speechSynthesis.current.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.9;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+
+        utterance.onstart = () => setIsSpeaking(true);
+        utterance.onend = () => {
+            setIsSpeaking(false);
+            if (callback) callback();
+        };
+        utterance.onerror = () => setIsSpeaking(false);
+
+        speechSynthesis.current.speak(utterance);
+    };
+
 
     // API calls
     const apiCall = async (endpoint, options = {}) => {
@@ -101,6 +137,10 @@ const HealthAssessmentApp = () => {
             setQuestions(response.questions);
             setCurrentQuestion(response.questions[0]);
             setCurrentStep('assessment');
+
+            setTimeout(() => {
+                speak(`Question 1: ${response.questions[0].question_text}`);
+            }, 1000);
         } catch (error) {
             setError(`Failed to start assessment: ${error.message}`);
         } finally {
@@ -147,9 +187,22 @@ const HealthAssessmentApp = () => {
                 
                 setQuestions(prev => [...prev, newQuestion]);
                 setCurrentQuestion(newQuestion);
+
+                setTimeout(() => {
+                    speak(`Question ${newQuestion.question_order}: ${newQuestion.question_text}`);
+                }, 1500);
             } else {
                 const nextUnanswered = questions.find(q => !q.is_answered && q.id !== currentQuestion.id);
-                setCurrentQuestion(nextUnanswered || null);
+                // setCurrentQuestion(nextUnanswered || null);
+                if (nextUnanswered) {
+                    setCurrentQuestion(nextUnanswered);
+                    // Auto-speak next question
+                    setTimeout(() => {
+                        speak(`Question ${nextUnanswered.question_order}: ${nextUnanswered.question_text}`);
+                    }, 1500);
+                } else {
+                    setCurrentQuestion(null);
+                }
             }
 
             setCurrentAnswer('');
@@ -194,7 +247,16 @@ const HealthAssessmentApp = () => {
 
     // Components
     const StartScreen = () => {
-        const [concern, setConcern] = useState('');
+        // FIXED: Set voice-to-text handler for initial concern
+        useEffect(() => {
+            currentInputSetterRef.current = setConcern;
+        }, []);
+        // useEffect(() => {
+        //     const timer = setTimeout(() => {
+        //         speak("Welcome to Health AI Assessment. How are you feeling today? Please tell us what's troubling you.");
+        //     }, 800);
+        //     return () => clearTimeout(timer); 
+        // }, []);
 
         return (
             <div className="bg-white/95 backdrop-blur-lg rounded-3xl p-8 shadow-2xl border border-white/20">
@@ -202,16 +264,41 @@ const HealthAssessmentApp = () => {
                     Tell us about your health concern
                 </h2>
                 <div className="mb-6">
-                    <label className="block text-gray-700 font-semibold mb-3">
-                        What's bothering you today?
+                    <label className="block text-gray-700 font-semibold mb-3 text-lg">
+                        How are you feeling today? Please tell us what's troubling you.
                     </label>
-                    <textarea
+                    {/* <textarea
                         className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all duration-300 resize-none"
                         value={concern}
                         onChange={(e) => setConcern(e.target.value)}
                         placeholder="Describe your symptoms, pain, or health concerns in detail..."
                         rows="5"
-                    />
+                    /> */}
+
+                    <div className="flex gap-3">
+                        <textarea
+                            className="flex-1 p-4 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all duration-300 resize-none"
+                            value={concern}
+                            onChange={(e) => setConcern(e.target.value)}
+                            placeholder="Describe your symptoms, pain, or health concerns in detail..."
+                            rows="4"
+                        />
+                        <button
+                            className={`px-6 py-4 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${
+                                isRecording 
+                                    ? 'bg-red-500 hover:bg-red-600 text-white recording-pulse' 
+                                    : 'bg-indigo-600 hover:bg-indigo-700 text-white hover:scale-105'
+                            }`}
+                            onClick={startVoiceRecognition}
+                        >
+                            <i className={`fas ${isRecording ? 'fa-stop' : 'fa-microphone'}`}></i>
+                        </button>
+                    </div>
+                    {voiceFeedback && (
+                        <div className="text-sm text-gray-600 italic bg-gray-50 mt-2 p-3 rounded-lg">
+                            {voiceFeedback}
+                        </div>
+                    )}
                 </div>
                 <button
                     className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 px-6 rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transform hover:scale-105 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none shadow-lg"
@@ -240,6 +327,10 @@ const HealthAssessmentApp = () => {
         const progress = totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0;
         const canFinish = answeredCount >= 3;
 
+        useEffect(() => {
+            currentInputSetterRef.current = setCurrentAnswer;
+        }, []);
+
         return (
             <div className="space-y-6">
                 {/* Progress Bar */}
@@ -260,12 +351,19 @@ const HealthAssessmentApp = () => {
                 {currentQuestion && (
                     <div className="bg-white/95 backdrop-blur-lg rounded-3xl p-8 shadow-xl border border-white/20">
                         <div className="flex items-center gap-4 mb-6">
-                            <div className="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-full flex items-center justify-center font-bold text-lg">
-                                {currentQuestion.question_order}
+                           <div className={`w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-full flex items-center justify-center font-bold text-lg ${isSpeaking ? 'animate-pulse' : ''}`}>
+                                {isSpeaking ? '🔊' : currentQuestion.question_order}
                             </div>
                             <h3 className="text-xl font-semibold text-gray-800 flex-1">
                                 {currentQuestion.question_text}
                             </h3>
+                            <button
+                                onClick={() => speak(`Question ${currentQuestion.question_order}: ${currentQuestion.question_text}`)}
+                                className="text-indigo-600 hover:text-indigo-800 p-2"
+                                title="Repeat question"
+                            >
+                            <i className="fas fa-volume-up"></i>
+                            </button>
                         </div>
                         
                         <div className="space-y-4">
@@ -488,6 +586,7 @@ const HealthAssessmentApp = () => {
                             setCurrentQuestion(null);
                             setTreatmentPlan(null);
                             setError('');
+                            setConcern('');
                         }}
                     >
                         <i className="fas fa-plus"></i>
