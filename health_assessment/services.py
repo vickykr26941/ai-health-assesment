@@ -5,6 +5,7 @@ import logging
 from django.conf import settings
 from typing import List, Dict, Any
 from .models import HealthAssessment, Question, Answer
+from .gemeni_service import GeminiService
 
 logger = logging.getLogger(__name__)
 
@@ -93,13 +94,14 @@ class ClaudeService:
         
         return context
 
-class EKAMCPService:
+# eka mpc 
+class EKAMCPService: 
     def __init__(self):
         self.base_url = settings.EKA_MCP_URL
     
     def generate_treatment_plan(self, assessment: HealthAssessment) -> Dict[str, Any]:
         """Generate treatment plan using EKA MCP server"""
-        
+        import pdb; pdb.set_trace()
         # Prepare assessment data for EKA MCP
         assessment_data = {
             "initial_concern": assessment.initial_concern,
@@ -120,12 +122,60 @@ class EKAMCPService:
                 })
         
         try:
-            response = requests.post(
-                self.base_url,
-                json=assessment_data,
-                headers={'Content-Type': 'application/json'},
-                timeout=30
-            )
+            # response = requests.post(
+            #     self.base_url,
+            #     json=assessment_data,
+            #     headers={'Content-Type': 'application/json'},
+            #     timeout=30
+            # )
+            gemeni_service = GeminiService()
+            prompt = f"""
+            You are a medical AI assistant helping to generate a treatment plan based on the following health assessment data:
+            Initial concern: {assessment.initial_concern}
+            Questions and answers:
+            """
+            for qa in assessment_data["questions_and_answers"]:
+                prompt += f"Q: {qa['question']}\nA: {qa['answer']}\n"
+            prompt += """
+            Generate a comprehensive treatment plan that includes:
+            1. Diagnosis based on the provided information
+            2. Specific recommendations for the patient
+            3. Any necessary medications or treatments
+            4. Lifestyle changes or home remedies
+            5. Follow-up instructions
+            The plan should be clear, actionable, and suitable for a non-medical person to understand.
+
+            Return the treatment plan in JSON format with the following structure:
+            Do not use the below content, just the structure:          
+            {
+            "diagnosis": "Based on your symptoms, this appears to be a condition that may require medical evaluation. Please consult with a healthcare provider for proper diagnosis.",
+            "recommendations": [
+                "Schedule an appointment with your primary care physician",
+                "Monitor symptoms daily and keep a symptom diary",
+                "Maintain adequate hydration (8-10 glasses of water daily)",
+                "Get sufficient rest (7-9 hours of sleep per night)",
+                "Consider stress reduction techniques like meditation or yoga"
+            ],
+            "medications": [
+                "Do not start any new medications without consulting your doctor",
+                "Over-the-counter pain relievers may be used as needed following package instructions"
+            ],
+            "lifestyle_changes": [
+                "Regular moderate exercise (30 minutes, 3-4 times per week)",
+                "Balanced diet rich in fruits and vegetables",
+                "Avoid known triggers that worsen symptoms",
+                "Practice good hygiene and self-care"
+            ],
+            "followup_instructions": "Schedule a follow-up appointment in 1-2 weeks if symptoms persist or worsen. Seek immediate medical attention if you experience severe symptoms or if your condition deteriorates."
+             }
+            """
+
+            import pdb; pdb.set_trace()
+            response = gemeni_service.model.generate_content(prompt)
+            if not response or not response.content:
+                logger.error("EKA MCP returned empty response")
+                return self._fallback_treatment_plan()
+            response_content = response.content[0].text.strip()
             
             if response.status_code == 200:
                 return response.json()

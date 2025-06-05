@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.10.4-buster
 
 WORKDIR /app
 
@@ -7,6 +7,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-EXPOSE 8000
+EXPOSE 8000 8001
 
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "health_project.wsgi:application"]

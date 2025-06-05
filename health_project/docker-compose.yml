@@ -5,10 +5,12 @@ services:
     build: .
     ports:
       - "8000:8000"
+      - "8001:8001"
     environment:
       - DEBUG=True
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - EKA_MCP_URL=${EKA_MCP_URL}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
     depends_on:
       - redis
     volumes:

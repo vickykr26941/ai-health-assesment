@@ -12,7 +12,7 @@ from .serializers import (
     SubmitAnswerSerializer, QuestionSerializer, TreatmentPlanSerializer
 )
 from .services import ClaudeService, EKAMCPService
-
+from .gemeni_service import GeminiService, GeminiServiceAdvanced
 logger = logging.getLogger(__name__)
 
 @api_view(['POST'])
@@ -37,8 +37,10 @@ def start_assessment(request):
             )
             
             # Generate initial questions using Claude
-            claude_service = ClaudeService()
-            questions = claude_service.generate_initial_questions(data['initial_concern'])
+            # claude_service = ClaudeService()
+            gemeni_service = GeminiService()
+            # questions = claude_service.generate_initial_questions(data['initial_concern'])
+            questions = gemeni_service.generate_initial_questions(data['initial_concern'])
             
             # Create question objects
             for i, question_text in enumerate(questions, 1):
@@ -68,6 +70,7 @@ def start_assessment(request):
 @api_view(['POST'])
 def submit_answer(request):
     """Submit an answer to a question"""
+    import pdb; pdb.set_trace()
     serializer = SubmitAnswerSerializer(data=request.data)
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -98,8 +101,10 @@ def submit_answer(request):
         next_question = None
         if answered_questions == total_questions and answered_questions < 8:  # Max 8 questions
             # Generate follow-up question
-            claude_service = ClaudeService()
-            followup_question_text = claude_service.generate_followup_question(assessment)
+            # claude_service = ClaudeService()
+            gemeni_service = GeminiService()
+            # followup_question_text = claude_service.generate_followup_question(assessment)
+            followup_question_text = gemeni_service.generate_followup_question(assessment)
             
             next_question = Question.objects.create(
                 assessment=assessment,
@@ -127,6 +132,7 @@ def submit_answer(request):
 @api_view(['GET'])
 def get_assessment(request, assessment_id):
     """Get assessment details"""
+    import pdb; pdb.set_trace()
     try:
         assessment = get_object_or_404(HealthAssessment, id=assessment_id)
         serializer = HealthAssessmentSerializer(assessment)
@@ -141,6 +147,7 @@ def get_assessment(request, assessment_id):
 @api_view(['POST'])
 def generate_treatment_plan(request, assessment_id):
     """Generate treatment plan for completed assessment"""
+    import pdb; pdb.set_trace()
     try:
         assessment = get_object_or_404(HealthAssessment, id=assessment_id)
         
@@ -195,7 +202,9 @@ def generate_treatment_plan(request, assessment_id):
 @api_view(['GET'])
 def get_next_question(request, assessment_id):
     """Get the next unanswered question"""
+    import pdb; pdb.set_trace()
     try:
+        import pdb; pdb.set_trace()
         assessment = get_object_or_404(HealthAssessment, id=assessment_id)
         next_question = assessment.questions.filter(is_answered=False).first()
         
