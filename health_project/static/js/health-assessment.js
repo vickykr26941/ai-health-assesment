@@ -1,5 +1,5 @@
 // # ===========================================
-// # static/js/health-assessment.js
+// # static/js/health-assessment.js (FIXED VERSION)
 // # ===========================================
 const { useState, useEffect, useRef } = React;
 
@@ -21,7 +21,12 @@ const HealthAssessmentApp = () => {
     const [voiceFeedback, setVoiceFeedback] = useState('');
 
     const speechRecognition = useRef(null);
-
+    const speechSynthesis = useRef(null);
+    const [isSpeaking, setIsSpeaking] = useState(false);
+    
+    // FIXED: Use a ref to track current input setter function
+    const currentInputSetterRef = useRef(() => {});
+    
     // Initialize speech recognition
     useEffect(() => {
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -39,7 +44,8 @@ const HealthAssessmentApp = () => {
             
             recognition.onresult = (event) => {
                 const transcript = event.results[0][0].transcript;
-                setCurrentAnswer(transcript);
+                // FIXED: Use the current input setter function
+                currentInputSetterRef.current(transcript);
                 setVoiceFeedback(`✓ Heard: "${transcript}"`);
             };
             
@@ -54,7 +60,37 @@ const HealthAssessmentApp = () => {
             
             speechRecognition.current = recognition;
         }
+
+        // Initialize speech synthesis
+        if ('speechSynthesis' in window) {
+            speechSynthesis.current = window.speechSynthesis;
+        }
     }, []);
+
+    // Text-to-Speech function
+    const speak = (text, callback = null) => {
+        if (!speechSynthesis.current) {
+            console.warn('Speech synthesis not supported');
+            return;
+        }
+
+        // Stop any current speech
+        speechSynthesis.current.cancel();
+        
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.9;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+        
+        utterance.onstart = () => setIsSpeaking(true);
+        utterance.onend = () => {
+            setIsSpeaking(false);
+            if (callback) callback();
+        };
+        utterance.onerror = () => setIsSpeaking(false);
+        
+        speechSynthesis.current.speak(utterance);
+    };
 
     // API calls
     const apiCall = async (endpoint, options = {}) => {
@@ -108,6 +144,12 @@ const HealthAssessmentApp = () => {
             setQuestions(questionObjects);
             setCurrentQuestion(questionObjects[0]);
             setCurrentStep('assessment');
+
+            // FIXED: Auto-speak first question with proper delay
+            setTimeout(() => {
+                speak(`Question 1: ${questionObjects[0].question_text}`);
+            }, 1000);
+
         } catch (error) {
             setError(`Failed to start assessment: ${error.message}`);
         } finally {
@@ -138,6 +180,9 @@ const HealthAssessmentApp = () => {
                 [currentQuestion.id]: currentAnswer
             }));
 
+            // Voice confirmation
+            speak("Got it. Processing your answer...");
+
             setQuestions(prev => prev.map(q => 
                 q.id === currentQuestion.id 
                     ? { ...q, is_answered: true, answer: currentAnswer }
@@ -154,9 +199,22 @@ const HealthAssessmentApp = () => {
                 
                 setQuestions(prev => [...prev, newQuestion]);
                 setCurrentQuestion(newQuestion);
+                
+                // Auto-speak new question
+                setTimeout(() => {
+                    speak(`Question ${newQuestion.question_order}: ${newQuestion.question_text}`);
+                }, 1500);
             } else {
                 const nextUnanswered = questions.find(q => !q.is_answered && q.id !== currentQuestion.id);
-                setCurrentQuestion(nextUnanswered || null);
+                if (nextUnanswered) {
+                    setCurrentQuestion(nextUnanswered);
+                    // Auto-speak next question
+                    setTimeout(() => {
+                        speak(`Question ${nextUnanswered.question_order}: ${nextUnanswered.question_text}`);
+                    }, 1500);
+                } else {
+                    setCurrentQuestion(null);
+                }
             }
 
             setCurrentAnswer('');
@@ -202,6 +260,20 @@ const HealthAssessmentApp = () => {
     // Components
     const StartScreen = () => {
         const [concern, setConcern] = useState('');
+        
+        // FIXED: Auto-speak initial question
+        useEffect(() => {
+            const timer = setTimeout(() => {
+                speak("Welcome to Health AI Assessment. How are you feeling today? Please tell us what's troubling you.");
+            }, 800);
+            
+            return () => clearTimeout(timer);
+        }, []);
+
+        // FIXED: Set voice-to-text handler for initial concern
+        useEffect(() => {
+            currentInputSetterRef.current = setConcern;
+        }, []);
 
         return (
             <div className="bg-white/95 backdrop-blur-lg rounded-3xl p-8 shadow-2xl border border-white/20">
@@ -209,16 +281,33 @@ const HealthAssessmentApp = () => {
                     Tell us about your health concern
                 </h2>
                 <div className="mb-6">
-                    <label className="block text-gray-700 font-semibold mb-3">
-                        What's bothering you today?
+                    <label className="block text-gray-700 font-semibold mb-3 text-lg">
+                        How are you feeling today? Please tell us what's troubling you.
                     </label>
-                    <textarea
-                        className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all duration-300 resize-none"
-                        value={concern}
-                        onChange={(e) => setConcern(e.target.value)}
-                        placeholder="Describe your symptoms, pain, or health concerns in detail..."
-                        rows="5"
-                    />
+                    <div className="flex gap-3">
+                        <textarea
+                            className="flex-1 p-4 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all duration-300 resize-none"
+                            value={concern}
+                            onChange={(e) => setConcern(e.target.value)}
+                            placeholder="Describe your symptoms, pain, or health concerns in detail..."
+                            rows="4"
+                        />
+                        <button
+                            className={`px-6 py-4 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${
+                                isRecording 
+                                    ? 'bg-red-500 hover:bg-red-600 text-white recording-pulse' 
+                                    : 'bg-indigo-600 hover:bg-indigo-700 text-white hover:scale-105'
+                            }`}
+                            onClick={startVoiceRecognition}
+                        >
+                            <i className={`fas ${isRecording ? 'fa-stop' : 'fa-microphone'}`}></i>
+                        </button>
+                    </div>
+                    {voiceFeedback && (
+                        <div className="text-sm text-gray-600 italic bg-gray-50 mt-2 p-3 rounded-lg">
+                            {voiceFeedback}
+                        </div>
+                    )}
                 </div>
                 <button
                     className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 px-6 rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transform hover:scale-105 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none shadow-lg"
@@ -247,6 +336,11 @@ const HealthAssessmentApp = () => {
         const progress = totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0;
         const canFinish = answeredCount >= 3;
 
+        // FIXED: Set voice-to-text handler for current answer
+        useEffect(() => {
+            currentInputSetterRef.current = setCurrentAnswer;
+        }, []);
+
         return (
             <div className="space-y-6">
                 {/* Progress Bar */}
@@ -267,12 +361,19 @@ const HealthAssessmentApp = () => {
                 {currentQuestion && (
                     <div className="bg-white/95 backdrop-blur-lg rounded-3xl p-8 shadow-xl border border-white/20">
                         <div className="flex items-center gap-4 mb-6">
-                            <div className="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-full flex items-center justify-center font-bold text-lg">
-                                {currentQuestion.question_order}
+                            <div className={`w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-full flex items-center justify-center font-bold text-lg ${isSpeaking ? 'animate-pulse' : ''}`}>
+                                {isSpeaking ? '🔊' : currentQuestion.question_order}
                             </div>
                             <h3 className="text-xl font-semibold text-gray-800 flex-1">
                                 {currentQuestion.question_text}
                             </h3>
+                            <button
+                                onClick={() => speak(`Question ${currentQuestion.question_order}: ${currentQuestion.question_text}`)}
+                                className="text-indigo-600 hover:text-indigo-800 p-2"
+                                title="Repeat question"
+                            >
+                                <i className="fas fa-volume-up"></i>
+                            </button>
                         </div>
                         
                         <div className="space-y-4">
@@ -543,114 +644,3 @@ const HealthAssessmentApp = () => {
 };
 
 ReactDOM.render(<HealthAssessmentApp />, document.getElementById('root'));
-
-// # ===========================================
-// # DJANGO DEPLOYMENT STEPS
-// # ===========================================
-
-// """
-// STEP 1: Create Directory Structure
-// ----------------------------------
-// health_project/
-// ├── manage.py
-// ├── requirements.txt
-// ├── .env
-// ├── health_project/
-// │   ├── __init__.py
-// │   ├── settings.py
-// │   ├── urls.py
-// │   └── wsgi.py
-// ├── health_assessment/
-// │   ├── __init__.py
-// │   ├── models.py
-// │   ├── views.py
-// │   ├── serializers.py
-// │   ├── services.py
-// │   ├── urls.py
-// │   ├── admin.py
-// │   └── apps.py
-// ├── templates/
-// │   └── index.html
-// └── static/
-//     └── js/
-//         └── health-assessment.js
-
-// STEP 2: Setup Environment
-// -------------------------
-// 1. Create virtual environment:
-//    python -m venv health_env
-//    source health_env/bin/activate  # On Windows: health_env\Scripts\activate
-
-// 2. Install dependencies:
-//    pip install -r requirements.txt
-
-// 3. Create .env file with your API keys:
-//    DEBUG=True
-//    SECRET_KEY=your-secret-key-here
-//    ANTHROPIC_API_KEY=your-anthropic-api-key
-//    EKA_MCP_URL=http://localhost:8080/api/treatment
-//    REDIS_URL=redis://localhost:6379/0
-
-// STEP 3: Database Setup
-// ----------------------
-// python manage.py makemigrations
-// python manage.py migrate
-// python manage.py createsuperuser
-
-// STEP 4: Create Static Files
-// ---------------------------
-// 1. Create templates/index.html (use the Django template above)
-// 2. Create static/js/health-assessment.js (use the React code above)
-
-// STEP 5: Update Settings (if needed)
-// -----------------------------------
-// # Add to settings.py if not already present:
-// STATICFILES_DIRS = [BASE_DIR / 'static']
-
-// STEP 6: Run Development Server
-// ------------------------------
-// python manage.py runserver
-
-// Visit: http://localhost:8000
-
-// STEP 7: Production Deployment
-// -----------------------------
-// 1. Update settings for production:
-//    - Set DEBUG=False
-//    - Configure ALLOWED_HOSTS
-//    - Use PostgreSQL instead of SQLite
-//    - Configure static files serving
-
-// 2. Collect static files:
-//    python manage.py collectstatic
-
-// 3. Use production server:
-//    gunicorn health_project.wsgi:application
-
-// STEP 8: Features Included
-// -------------------------
-// ✅ Voice-to-text input for all questions
-// ✅ Manual text input option
-// ✅ Real-time progress tracking
-// ✅ Dynamic follow-up questions
-// ✅ Comprehensive treatment plans
-// ✅ Responsive design with Tailwind CSS
-// ✅ Error handling and user feedback
-// ✅ Session management
-// ✅ Professional medical UI/UX
-
-// STEP 9: Browser Compatibility
-// -----------------------------
-// - Chrome/Chromium: Full support
-// - Firefox: Full support
-// - Safari: Full support
-// - Edge: Full support
-// - Mobile browsers: Full support
-
-// STEP 10: Voice Recognition Notes
-// --------------------------------
-// - Requires HTTPS in production
-// - Works in all modern browsers
-// - Automatic fallback to text input
-// - Clear user feedback for voice status
-// """

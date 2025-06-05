@@ -28,7 +28,6 @@ class ClaudeService:
         
         Return only the questions, one per line, without numbering.
         """
-        import pdb; pdb.set_trace()
         try:
             response = self.client.messages.create(
                 model="claude-3-sonnet-20240229",

@@ -14,7 +14,6 @@ class GeminiService:
         self.model = genai.GenerativeModel('gemini-2.5-flash')
     
     def generate_initial_questions(self, concern: str) -> List[str]:
-        import pdb; pdb.set_trace()
         """Generate initial questions based on the patient's concern"""
         prompt = f"""
         You are a medical AI assistant helping to conduct a health assessment. 
@@ -97,7 +96,8 @@ class GeminiService:
 # Alternative implementation with more advanced features
 class GeminiServiceAdvanced:
     def __init__(self):
-        genai.configure(api_key=settings.GEMINI_API_KEY)
+        # genai.configure(api_key=settings.GEMINI_API_KEY)
+        genai.configure("AIzaSyCUDUpcm4RujDW3wH2RPpr2nKOiyD81DQI")
         # Use Gemini Pro for more complex reasoning
         self.model = genai.GenerativeModel('gemini-1.5-pro')
         
