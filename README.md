@@ -7,7 +7,6 @@ Health assist is a project focused on building and evaluating AI solutions for h
 ### Prerequisites
 
 - Python 3.7+
-- Node.js and npm (for JavaScript components)
 - Docker (optional, for containerized deployment)
 
 ### Installation
