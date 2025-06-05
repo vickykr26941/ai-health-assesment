@@ -47,7 +47,8 @@ const HealthAssessmentApp = () => {
             recognition.onresult = (event) => {
                 const transcript = event.results[0][0].transcript;
                 // setCurrentAnswer(transcript);
-                currentInputSetterRef.current(transcript);
+                // currentInputSetterRef.current(transcript);
+                currentInputSetterRef.current(prev => prev + ' ' + transcript);
                 setVoiceFeedback(`✓ Heard: "${transcript}"`);
             };
             
