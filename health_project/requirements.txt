@@ -1,0 +1,9 @@
+Django==4.2.7
+djangorestframework==3.14.0
+django-cors-headers==4.3.1
+anthropic==0.7.7
+requests==2.31.0
+python-dotenv==1.0.0
+celery==5.3.4
+redis==5.0.1
+gunicorn==21.2.0
