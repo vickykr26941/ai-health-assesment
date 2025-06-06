@@ -352,32 +352,6 @@ const HealthAssessmentApp = () => {
                             </div>
                         </div>
 
-                        {/* Quick Tips */}
-                        <div className="mb-8 p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
-                            <h3 className="font-semibold text-green-800 mb-3 flex items-center">
-                                <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
-                                Quick Tips for Better Assessment
-                            </h3>
-                            <div className="grid md:grid-cols-2 gap-3 text-sm text-green-700">
-                                <div className="flex items-start">
-                                    <div className="w-1 h-1 bg-green-400 rounded-full mr-2 mt-2"></div>
-                                    <span>Include when symptoms started</span>
-                                </div>
-                                <div className="flex items-start">
-                                    <div className="w-1 h-1 bg-green-400 rounded-full mr-2 mt-2"></div>
-                                    <span>Describe pain level (1-10)</span>
-                                </div>
-                                <div className="flex items-start">
-                                    <div className="w-1 h-1 bg-green-400 rounded-full mr-2 mt-2"></div>
-                                    <span>Mention any triggers</span>
-                                </div>
-                                <div className="flex items-start">
-                                    <div className="w-1 h-1 bg-green-400 rounded-full mr-2 mt-2"></div>
-                                    <span>Note related symptoms</span>
-                                </div>
-                            </div>
-                        </div>
-
                         {/* Action Buttons */}
                         <div className="flex gap-4">
                             <button
@@ -413,6 +387,32 @@ const HealthAssessmentApp = () => {
                                 </svg>
                                 Clear
                             </button>
+                        </div>
+
+                          {/* Quick Tips */}
+                        <div className="mb-8 p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
+                            <h3 className="font-semibold text-green-800 mb-3 flex items-center">
+                                <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                                Quick Tips for Better Assessment
+                            </h3>
+                            <div className="grid md:grid-cols-2 gap-3 text-sm text-green-700">
+                                <div className="flex items-start">
+                                    <div className="w-1 h-1 bg-green-400 rounded-full mr-2 mt-2"></div>
+                                    <span>Include when symptoms started</span>
+                                </div>
+                                <div className="flex items-start">
+                                    <div className="w-1 h-1 bg-green-400 rounded-full mr-2 mt-2"></div>
+                                    <span>Describe pain level (1-10)</span>
+                                </div>
+                                <div className="flex items-start">
+                                    <div className="w-1 h-1 bg-green-400 rounded-full mr-2 mt-2"></div>
+                                    <span>Mention any triggers</span>
+                                </div>
+                                <div className="flex items-start">
+                                    <div className="w-1 h-1 bg-green-400 rounded-full mr-2 mt-2"></div>
+                                    <span>Note related symptoms</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -531,7 +531,7 @@ const HealthAssessmentApp = () => {
                                     </div>
 
                                     {voiceFeedback && (
-                                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 p-4 rounded-lg">
+                                        <div className="bg-gradient-to-r from-gray-50 to-indigo-50 border border-gray-200 p-4 rounded-lg">
                                             <div className="flex items-center">
                                                 <div className="w-2 h-2 bg-blue-500 rounded-full mr-3 animate-pulse"></div>
                                                 <span className="text-blue-700 font-medium text-sm italic">{voiceFeedback}</span>

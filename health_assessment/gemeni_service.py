@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 class GeminiService:
     def __init__(self):
-        genai.configure(api_key="your_api_key_here")  # Replace with your actual API key
+        genai.configure(api_key="AIzaSyAo_PhwPEmumRAeKwodOwnLYU7sL8hCA_Q")  # Replace with your actual API key
         self.model = genai.GenerativeModel('gemini-2.0-flash')
     
     def generate_initial_questions(self, concern: str) -> List[str]:
