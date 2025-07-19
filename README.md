@@ -1,27 +1,39 @@
-# Health Assessment
+# AI Health Assessment
+
+**Healht Ai assesment.**
+
 ## Overview
 
-Health assist is a project focused on building and evaluating AI solutions for health-related data and use cases. The repository contains scripts and tools primarily written in Python and JavaScript, with supporting HTML and Docker configurations.
+AI Health Assessment is a project exploring how artificial intelligence can assist in preliminary healthcare assessments. Users provide their initial health concern, and the AI interacts by asking targeted follow-up questions based on previous answers. Once the questionnaire is complete, the system generates a comprehensive report including:
+
+- **Diagnosis:** AI-generated preliminary diagnosis
+- **Medications:** Suggested medications (for demonstration only)
+- **Follow-Up:** Recommendations for additional actions or appointments
+- **Treatment Plan:** AI-suggested plan based on assessment
+
+> **Disclaimer:**  
+> This project is for educational and experimental purposes only. Do not use the generated report for medical decisions without consulting a qualified doctor.
+
+---
+
+## Features
+
+- Interactive health assessment via AI-driven Q&A
+- Dynamic question flow adapting to user responses
+- Automated detailed health report generation
+- Educational tool for understanding AI in healthcare
+
 ## Getting Started
 
 ### Prerequisites
 
-- Python 3.7+
-- Docker (optional, for containerized deployment)
+- Node.js and Python installed
+- (Optional) Docker for containerized deployment
 
 ### Installation
 
-1. **Clone the repository:**
-    ```bash
-    git clone https://github.com/vickykr26941/aiassessment.git
-    cd aiassessment
-    ```
-
-2. **Install Python dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
-3. **Start the development server:**
-    ```bash
-    python manage.py runserver
-    ```    
+```bash
+git clone https://github.com/vickykr26941/ai-health-assesment.git
+cd ai-health-assesment
+npm install
+pip install -r requirements.txt
